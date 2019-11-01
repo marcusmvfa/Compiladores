@@ -1,0 +1,135 @@
+
+
+/**
+ * JavaCC file
+ */
+ PARSER_BEGIN(SyntaxChecker)
+
+package myNewPackage;
+
+import java.util.Scanner;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Scanner;
+import java.io.IOException;
+
+public class SyntaxChecker {
+  
+    public static void main(String[] args) {
+      
+		String content = null;
+                try {
+					content = new String(Files.readAllBytes(Paths.get("C:/Users/Marcus/Documents/Faculdade/Compiladores/TrabCompiladores/teste.txt")));
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+
+        try {
+            new SyntaxChecker(new java.io.StringReader(content)).programaPrincipal();
+            System.out.println("Syntax is okay\n");
+ 			System.out.println(content);
+           
+        } catch (Throwable e) {
+            // Catching Throwable is ugly but JavaCC throws Error objects!
+            System.out.println("Syntax check failed: " + e.getMessage());
+        }
+        
+    }
+    
+}
+
+PARSER_END(SyntaxChecker)
+
+SKIP: {
+< " " | "\t" | "\r" | "\n" | "\r\n" > //White space
+| <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n") > //Single-line comments
+| <"/*"(~["/"])*  "*""/" > //Multi-line comments
+}
+
+TOKEN: {
+  <START_PROGRAM: "PRINCIPAL">|
+  <END_PROGRAM: ("END_PRINCIPAL")>  |
+  ";" | "(" | ")"
+}
+
+TOKEN: {
+  <NUM: ["0" - "9"]> |
+  <FLOAT_NUM: (<NUM>)+"."(<NUM>)+ > |
+  <LETRA: ["a" - "z"] | ["A" - "Z"] | "_" > |
+  <TIPO: "int"|"float"|"varchar">	
+}
+
+TOKEN: {
+   <OPERADOR_MATEMATICO: "+" | "-" | "*" | "/" | "=" > |
+   <OPERADOR_LOGICO: "<" | ">" | "<=" | ">=" | "!==" | "==" > |
+   <BLOCO_INICIO: "@{ "> |
+   <BLOCO_FINAL: " };"> 
+}
+
+TOKEN: {
+	<IF: "IF"|"if"> |
+	<THEN: "THEN" | "then">|
+	<ELSE: "ELSE" | "else">|
+	<FOR: "FOR" | "for">|
+	<TO: "TO" | "to">|
+	<DO: "do" | "DO">| 
+	<HERDA: "EXTENDS" | "extends">|
+	<RETURN: "RETURN " | "return ">
+}
+
+TOKEN: {
+	<CLASS: "CLASS"|"class">
+}
+
+void classe(): {} {
+	<CLASS> <LETRA>(<LETRA> | <NUM>)* (<HERDA> <LETRA>(<LETRA> | <NUM>)* (", " <LETRA>(<LETRA> | <NUM>)*)*)*
+		<BLOCO_INICIO>
+			metodoo()
+			comandos()
+		<BLOCO_FINAL>
+}
+
+void parametros(): {} {
+  (<TIPO> <LETRA>(<LETRA> | <NUM>)* ("," <TIPO> <LETRA>(<LETRA> | <NUM>)*)*)*
+}
+
+void metodoo(): {} {
+	<TIPO> <LETRA>(<LETRA> | <NUM>)* "(" parametros() ")"
+		<BLOCO_INICIO>
+			comandos()
+			<RETURN> <LETRA>(<LETRA> | <NUM>)* ";"
+		<BLOCO_FINAL>
+}
+
+void declaracao(): {} {
+  <TIPO> <LETRA>(<LETRA> | <NUM>)* ((<OPERADOR_LOGICO> | <OPERADOR_MATEMATICO>) (<LETRA> | <NUM> | <FLOAT_NUM>)*)* ";"
+}
+
+void operacoesMatematicas(): {} {
+  (<LETRA> | <NUM> | <FLOAT_NUM>)* ((<OPERADOR_MATEMATICO> | <OPERADOR_LOGICO>) (<LETRA> | <NUM> | <FLOAT_NUM>)*)* ";"
+}
+
+void condicao(): {} {
+   <IF> ("(")* (<LETRA> | <NUM> | <FLOAT_NUM>)* (<OPERADOR_LOGICO> (<LETRA> | <NUM> | <FLOAT_NUM>)*)* (")")*
+   <THEN> comandos()
+   (<ELSE> comandos())*
+}
+
+void loop(): {} {
+  <FOR> ("(")* (<LETRA> | <NUM> )* ((<OPERADOR_MATEMATICO> | <OPERADOR_LOGICO>) (<LETRA> | <NUM> | <FLOAT_NUM>)*)* 
+  <TO> (<LETRA> | <NUM> | <FLOAT_NUM>)* ((<OPERADOR_MATEMATICO> | <OPERADOR_LOGICO>) (<LETRA> | <NUM> | <FLOAT_NUM>)*)* (")")* <DO>
+  <BLOCO_INICIO> comandos() <BLOCO_FINAL>
+}
+
+void comandos(): {} {
+	(declaracao() | operacoesMatematicas() | condicao() | loop() | classe())*
+}
+
+void  programaPrincipal(): {} {
+	<START_PROGRAM> (<LETRA> | <NUM>)+
+		<BLOCO_INICIO>
+	 		comandos()
+		<BLOCO_FINAL>
+	<END_PROGRAM>
+}
